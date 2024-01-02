@@ -1,3 +1,6 @@
+# Alert
+This repository is for post-submission development of smol.cs. The original repo for the submission is [here](https://github.com/GediminasMasaitis/Chess-Challenge-Submission/tree/submission), and is also stored in the branch "submission" in this repo.
+
 # Chess Coding Challenge (C#)
 Welcome to the [chess coding challenge](https://youtu.be/iScy18pVR58)! This is a friendly competition in which your goal is to create a small chess bot (in C#) using the framework provided in this repository.
 Once submissions close, these bots will battle it out to discover which bot is best!

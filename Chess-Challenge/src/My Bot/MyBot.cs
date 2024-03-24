@@ -27,13 +27,13 @@ public class MyBot : IChessBot
     // Due to the rules of the challenge and how token counting works, evaluation constants are packed into C# decimals,
     // as they allow the most efficient (12 usable bits per token).
     // The ordering is as follows: Midgame term 1, endgame term 1, midgame, term 2, endgame term 2...
-    static sbyte[] extracted = new [] { 4835740172228143389605888m, 1862983114964290202813595648m, 6529489037797228073584297991m, 6818450810788061916507740187m, 7154536855449028663353021722m, 14899014974757699833696556826m, 25468819436707891759039590695m, 29180306561342183501734565961m, 944189991765834239743752701m, 4194697739m, 4340114601700738076711583744m, 3410436627687897068963695623m, 11182743911298765866015857947m, 10873240011723255639678263585m, 17684436730682332602697851426m, 17374951722591802467805509926m, 31068658689795177567161113954m, 1534136309681498319279645285m, 18014679997410182140m, 1208741569195510172352512m, 13789093343132567021105512448m, 6502873946609222871099113472m, 1250m }.SelectMany(x => decimal.GetBits(x).Take(3).SelectMany(y => (sbyte[])(Array)BitConverter.GetBytes(y))).ToArray();
+    static sbyte[] extracted = new [] { 4835740172228143389605888m, 2477126802417782031162277888m, 8987268064278214852567370499m, 10217997163295925037733585164m, 11160973432655769285841133323m, 15490188721000912996060636172m, 29756944731101898114373858066m, 35638477370265809412994327845m, 19342813114113316978950144m, 4029415944847360518751518720m, 9914528280548214173287845126m, 9295591374614011062820480010m, 9297990354729639866572414218m, 19514783056024713615916080651m, 31298343949203241391214116622m, 33160132234332197119198324513m, 8043016548800136891691039241m, 71819879314466714244163308032m }.SelectMany(x => decimal.GetBits(x).Take(3).SelectMany(y => (sbyte[])(Array)BitConverter.GetBytes(y))).ToArray();
 
     // After extracting the raw mindgame/endgame terms, we repack it into integers of midgame/endgame pairs.
     // The scheme in bytes (assuming little endian) is: 00 EG 00 MG
     // The idea of this is that we can do operations on both midgame and endgame values simultaneously, preventing the need
     // for evaluation for separate mid-game / end-game terms.
-    int[] evalValues = Enumerable.Range(0, 138).Select(i => extracted[i * 2] | extracted[i * 2 + 1] << 16).ToArray();
+    int[] evalValues = Enumerable.Range(0, 108).Select(i => extracted[i * 2] | extracted[i * 2 + 1] << 16).ToArray();
 
     public Move Think(Board board, Timer timer)
     {
@@ -96,24 +96,13 @@ public class MyBot : IChessBot
                     {
                         var sq = BitboardHelper.ClearAndGetIndexOfLSB(ref bitboard);
 
-                        // Open files, doubled pawns
-                        // We evaluate how much each piece wants to be in an open/semi-open file (both merged to save tokens).
-                        // We exclude the current piece's square from being considered, this enables a trick to save tokens:
-                        // for pawns, an open file means it is not a doubled pawn, so it acts as a doubled pawn detection for free.
-                        if ((0x101010101010101UL << sq % 8 & ~(1UL << sq) & board.GetPieceBitboard(PieceType.Pawn, isWhite)) == 0)
-                            score += evalValues[126 + pieceIndex];
-
                         // For bishop, rook, queen and king. ELO tests proved that mobility for other pieces are not worth considering.
                         if (pieceIndex > 2)
                         {
                             // Mobility
                             // The more squares you are able to attack, the more flexible your position is.
-                            var mobility = BitboardHelper.GetPieceAttacks((PieceType)pieceIndex, new Square(sq), board, isWhite) & ~(isWhite ? board.WhitePiecesBitboard : board.BlackPiecesBitboard);
-                            score += evalValues[112 + pieceIndex] * BitboardHelper.GetNumberOfSetBits(mobility)
-                                     // King attacks
-                                     // If your pieces' mobility intersects the opponent king's mobility, this means you are attacking
-                                     // the king, and this is worth evaluating separately.
-                                   + evalValues[119 + pieceIndex] * BitboardHelper.GetNumberOfSetBits(mobility & BitboardHelper.GetKingAttacks(board.GetKingSquare(!isWhite)));
+                            var mobility = BitboardHelper.GetPieceAttacks((PieceType)pieceIndex, new (sq), board, isWhite) & ~(isWhite ? board.WhitePiecesBitboard : board.BlackPiecesBitboard);
+                            score += evalValues[101 + pieceIndex] * BitboardHelper.GetNumberOfSetBits(mobility);
                         }
 
                         // Flip square if black.
@@ -143,14 +132,14 @@ public class MyBot : IChessBot
                         // Additionally, each column/row, or file/rank is evaluated, as opposed to every square individually,
                         // which is only ~20 ELO weaker compared to full PSTs and saves a lot of tokens.
                         score += evalValues[pieceIndex * 8 + sq / 8]
-                               + evalValues[56 + pieceIndex * 8 + sq % 8]
+                               + evalValues[48 + pieceIndex * 8 + sq % 8]
                                << 3;
                     }
                 }
             }
             
             // Here we interpolate the midgame/endgame scores from the single variable to a proper integer that can be used by search
-            score = ((short)score * phase + (score + 0x8000 >> 16) * (24 - phase)) / 24;
+            score = ((short)score * phase + score / 0x10000 * (24 - phase)) / 24;
 
             // Local method for similar calls to Search, inspired by Tyrant7's approach here: https://github.com/Tyrant7/Chess-Challenge
             // We keep known values, but we create a local method that will be used to implement 3-fold PVS. More on that later on

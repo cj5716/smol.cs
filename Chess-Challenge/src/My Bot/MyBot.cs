@@ -69,7 +69,7 @@ public class MyBot : IChessBot
             // -2000000 = -inf. It just indicates "no move has been found yet".
             // Tempo is the idea that each move is benefitial to us, so we adjust the static eval using a fixed value.
             // We use 15 tempo for evaluation for mid-game, 0 for end-game.
-            var (key, inQsearch, bestScore, doPruning, score, phase) = (board.ZobristKey, depth <= 0, -2_000_000, alpha == beta - 1 && !inCheck, 15, 0);
+            var (key, inQsearch, bestScore, doPruning, score, phase, movesEvaluated) = (board.ZobristKey, depth <= 0, -2_000_000, alpha == beta - 1 && !inCheck, 15, 0, 0);
 
             // Here we do a static evaluation to determine the current static score for the position.
             // A static evaluation is like a one-look determination of how good the position is, without looking into the future.
@@ -212,11 +212,9 @@ public class MyBot : IChessBot
             }
 
             // Move generation, best-known move then MVV-LVA ordering then quiet move history
-            var (moves, quietsEvaluated, movesEvaluated) = (board.GetLegalMoves(inQsearch).OrderByDescending(move => move == ttMove ? 9_000_000_000_000_000_000
-                                                                                                                   : move.IsCapture ? 1_000_000_000_000_000_000 * (long)move.CapturePieceType - (long)move.MovePieceType
-                                                                                                                   : quietHistory[move.RawValue & 4095]),
-                                                            new List<Move>(),
-                                                            0);
+            var moves = board.GetLegalMoves(inQsearch).OrderByDescending(move => move == ttMove ? 9_000_000_000_000_000_000
+                                                                               : move.IsCapture ? 1_000_000_000_000_000_000 * (long)move.CapturePieceType - (long)move.MovePieceType
+                                                                               : quietHistory[move.RawValue & 4095]);
 
             ttFlag = 0; // Upper
 
@@ -225,10 +223,6 @@ public class MyBot : IChessBot
             {
                 board.MakeMove(move);
                 nodes++; // #DEBUG
-
-                // A quiet move traditionally means a move that doesn't cause a capture to be the best move,
-                // is not a promotion, and doesn't give check. For token savings we only consider captures.
-                bool isQuiet = !move.IsCapture;
 
                 // Principal variation search
                 // We trust that our move ordering is good enough to ensure the first move searched to be the best move most of the time,
@@ -251,9 +245,6 @@ public class MyBot : IChessBot
                 if (depth > 2 && timer.MillisecondsElapsedThisTurn > allocatedTime)
                     return bestScore;
 
-                // Count the number of moves we have evaluated for detecting mates and stalemates
-                movesEvaluated++;
-
                 // If the move is better than our current best, update our best score
                 if (score > bestScore)
                 {
@@ -270,18 +261,13 @@ public class MyBot : IChessBot
                         // If the move is better than our current beta, we can stop searching
                         if (score >= beta)
                         {
-                            if (isQuiet)
+                            if (!move.IsCapture)
                             {
                                 // History heuristic bonus
                                 // We assume that good quiet moves will be good for most positions close to the root, so we track quiet moves
                                 // causing beta cutoffs, and will order them higher in the future.
                                 // More info: https://www.chessprogramming.org/History_Heuristic
                                 quietHistory[move.RawValue & 4095] += depth * depth;
-
-                                // History heuristic malus
-                                // Similarly to giving a bonus, we penalize all previous quiet moves that didn't give a beta cutoff
-                                foreach (var previousMove in quietsEvaluated)
-                                    quietHistory[previousMove.RawValue & 4095] -= depth * depth;
                             }
 
                             ttFlag++; // Lower
@@ -290,13 +276,6 @@ public class MyBot : IChessBot
                         }
                     }
                 }
-
-                if (isQuiet)
-                    quietsEvaluated.Add(move);
-
-                // Late move pruning
-                if (doPruning && quietsEvaluated.Count > 3 + depth * depth)
-                    break;
             }
 
             // Checkmate / stalemate detection

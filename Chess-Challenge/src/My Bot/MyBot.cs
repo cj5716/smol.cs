@@ -141,7 +141,7 @@ public class MyBot : IChessBot
                 //   a. Either the flag is exact, or:
                 //   b. The stored score has an upper bound, but we scored below the stored score, or:
                 //   c. The stored score has a lower bound, but we scored above the scored score
-                if (ttDepth >= depth && (ttFlag == 1 || ttFlag == 2 && ttScore >= beta || ttFlag == 0 && ttScore <= alpha))
+                if (!root && ttDepth >= depth && (ttFlag == 1 || ttFlag == 2 && ttScore >= beta || ttFlag == 0 && ttScore <= alpha))
                     return ttScore;
             }
             // Internal iterative reductions

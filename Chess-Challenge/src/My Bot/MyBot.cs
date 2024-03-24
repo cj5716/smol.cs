@@ -49,12 +49,12 @@ public class MyBot : IChessBot
         long nodes = 0; // #DEBUG
 
         // Negamax search is embedded as a local function in order to reduce token count
-        int Search(int ply, int depth, int alpha, int beta)
+        int Search(bool root, int depth, int alpha, int beta)
         {
             // Repetition detection
             // There is no need to check for 3-fold repetition, if a single repetition (0 = draw) ends up being the best,
             // we can trust that repeating moves is the best course of action in this position.
-            if (ply > 0 && board.IsRepeatedPosition())
+            if (!root && board.IsRepeatedPosition())
                 return 0;
 
             // Check extension: if we are in check, we should search deeper. More info: https://www.chessprogramming.org/Check_Extensions
@@ -143,7 +143,7 @@ public class MyBot : IChessBot
 
             // Local method for similar calls to Search, inspired by Tyrant7's approach here: https://github.com/Tyrant7/Chess-Challenge
             // We keep known values, but we create a local method that will be used to implement 3-fold PVS. More on that later on
-            int defaultSearch(int minusBeta, int reduction = 1) => score = -Search(ply + 1, depth - reduction, minusBeta, -alpha);
+            int defaultSearch(int minusBeta, int reduction = 1) => score = -Search(false, depth - reduction, minusBeta, -alpha);
 
             // Transposition table lookup
             // Look up best move known so far if it is available
@@ -231,7 +231,7 @@ public class MyBot : IChessBot
                     if (score > alpha)
                     {
                         ttMove = move;
-                        if (ply == 0) rootBestMove = move;
+                        if (root) rootBestMove = move;
                         alpha = score;
                         ttFlag = 1; // Exact
 
@@ -258,7 +258,7 @@ public class MyBot : IChessBot
             // Checkmate / stalemate detection
             // 1000000 = mate score
             if (movesEvaluated == 0)
-                return inQsearch ? bestScore : inCheck ? ply - 1_000_000 : 0;
+                return inQsearch ? bestScore : inCheck ? board.PlyCount - 1_000_000 : 0;
 
             // Store the current position in the transposition table
             TT[key % 2097152] = (key, ttMove, inQsearch ? 0 : depth, bestScore, ttFlag);
@@ -270,7 +270,7 @@ public class MyBot : IChessBot
         for (; timer.MillisecondsElapsedThisTurn <= allocatedTime / 5 /* Soft time limit */; ++depth)
         {
             int score = // #DEBUG
-            Search(0, depth, -2_000_000, 2_000_000);
+            Search(true, depth, -2_000_000, 2_000_000);
 
             // Hard time limit
             // If we are out of time, we stop searching and break.

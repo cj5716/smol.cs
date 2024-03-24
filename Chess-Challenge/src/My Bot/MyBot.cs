@@ -41,7 +41,7 @@ public class MyBot : IChessBot
         Move rootBestMove = default;
 
         // Intitialise parameters that exist only during one search
-        var (allocatedTime, i, score, depth) = (timer.MillisecondsRemaining / 8, 0, 0, 1);
+        var (allocatedTime, i, depth) = (timer.MillisecondsRemaining / 8, 0, 1);
 
         // Decay quiet history instead of clearing it. 
         for (; i < 4096; quietHistory[i++] /= 8) ;
@@ -315,7 +315,8 @@ public class MyBot : IChessBot
         // Iterative deepening
         for (; timer.MillisecondsElapsedThisTurn <= allocatedTime / 5 /* Soft time limit */; ++depth)
         {
-            score = Search(0, depth, -2_000_000, 2_000_000, false);
+            int score = // #DEBUG
+            Search(0, depth, -2_000_000, 2_000_000, false);
 
             // Hard time limit
             // If we are out of time, we stop searching and break.

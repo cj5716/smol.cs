@@ -41,7 +41,7 @@ public class MyBot : IChessBot
         Move rootBestMove = default;
 
         // Intitialise parameters that exist only during one search
-        var (killers, allocatedTime, i, score, depth) = (new Move[256], timer.MillisecondsRemaining / 8, 0, 0, 1);
+        var (allocatedTime, i, score, depth) = (timer.MillisecondsRemaining / 8, 0, 0, 1);
 
         // Decay quiet history instead of clearing it. 
         for (; i < 4096; quietHistory[i++] /= 8) ;
@@ -222,10 +222,9 @@ public class MyBot : IChessBot
                 }
             }
 
-            // Move generation, best-known move then MVV-LVA ordering then killers then quiet move history
+            // Move generation, best-known move then MVV-LVA ordering then quiet move history
             var (moves, quietsEvaluated, movesEvaluated) = (board.GetLegalMoves(inQsearch).OrderByDescending(move => move == ttMove ? 9_000_000_000_000_000_000
                                                                                                                    : move.IsCapture ? 1_000_000_000_000_000_000 * (long)move.CapturePieceType - (long)move.MovePieceType
-                                                                                                                   : move == killers[ply] ? 500_000_000_000_000_000
                                                                                                                    : quietHistory[move.RawValue & 4095]),
                                                             new List<Move>(),
                                                             0);
@@ -296,7 +295,6 @@ public class MyBot : IChessBot
                                 // Similarly to giving a bonus, we penalize all previous quiet moves that didn't give a beta cutoff
                                 foreach (var previousMove in quietsEvaluated)
                                     quietHistory[previousMove.RawValue & 4095] -= depth * depth;
-                                killers[ply] = move;
                             }
 
                             ttFlag++; // Lower
@@ -327,36 +325,22 @@ public class MyBot : IChessBot
 
         // Iterative deepening
         for (; timer.MillisecondsElapsedThisTurn <= allocatedTime / 5 /* Soft time limit */; ++depth)
-            // Aspiration windows
-            for (int window = 40;;)
-            {
-                int alpha = score - window,
-                    beta = score + window;
-                // Search with the current window
-                score = Search(0, depth, alpha, beta, false);
+        {
+            score = Search(0, depth, -2_000_000, 2_000_000, false);
 
-                // Hard time limit
-                // If we are out of time, we stop searching and break.
-                if (timer.MillisecondsElapsedThisTurn > allocatedTime)
-                    break;
+            // Hard time limit
+            // If we are out of time, we stop searching and break.
+            if (timer.MillisecondsElapsedThisTurn > allocatedTime)
+                break;
 
-                // If the score is outside of the current window, we must research with a wider window.
-                // Otherwise if we are in the window we can proceed to the next depth.
-                if (alpha < score && score < beta)
-                { // #DEBUG
-                    var elapsed = timer.MillisecondsElapsedThisTurn > 0 ? timer.MillisecondsElapsedThisTurn : 1; // #DEBUG
-                    Console.WriteLine($"info depth {depth} " + // #DEBUG
-                                      $"score cp {score} " + // #DEBUG
-                                      $"time {timer.MillisecondsElapsedThisTurn} " + // #DEBUG
-                                      $"nodes {nodes} " + // #DEBUG
-                                      $"nps {nodes * 1000 / elapsed} " + // #DEBUG
-                                      $"pv {rootBestMove.ToString().Substring(7, rootBestMove.ToString().Length - 8)}"); // #DEBUG
-                    break;
-                } // #DEBUG
-
-                window *= 2;
-            }
-
+            var elapsed = timer.MillisecondsElapsedThisTurn > 0 ? timer.MillisecondsElapsedThisTurn : 1; // #DEBUG
+            Console.WriteLine($"info depth {depth} " + // #DEBUG
+                              $"score cp {score} " + // #DEBUG
+                              $"time {timer.MillisecondsElapsedThisTurn} " + // #DEBUG
+                              $"nodes {nodes} " + // #DEBUG
+                              $"nps {nodes * 1000 / elapsed} " + // #DEBUG
+                              $"pv {rootBestMove.ToString().Substring(7, rootBestMove.ToString().Length - 8)}"); // #DEBUG
+        }
         return rootBestMove;
     }
 }

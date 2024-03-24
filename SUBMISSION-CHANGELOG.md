@@ -1683,7 +1683,6 @@ Score of ChessChallenge vs ChessChallengeTier2: 1891 - 27 - 82  [0.966] 2000
 ...      White vs Black: 990 - 928 - 82  [0.515] 2000
 Elo difference: 581.4 +/- 35.2, LOS: 100.0 %, DrawRatio: 4.1 %
 
-cx
 ```
 
 ### 1.49

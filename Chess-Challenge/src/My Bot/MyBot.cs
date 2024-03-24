@@ -242,9 +242,7 @@ public class MyBot : IChessBot
                 // More info: https://www.chessprogramming.org/Late_Move_Reductions
 
                 if (inQsearch || movesEvaluated == 0 // No PVS for first move or qsearch
-                || (depth <= 2 || movesEvaluated <= 4 || !isQuiet // Conditions not to do LMR
-                ||  defaultSearch(~alpha, 2 + depth / 8 + movesEvaluated / 16 + Convert.ToInt32(doPruning) - quietHistory[move.RawValue & 4095].CompareTo(0)) > alpha) // LMR search raised alpha
-                &&  alpha < defaultSearch(~alpha) && score < beta) // Full depth search failed high
+                || (alpha < defaultSearch(~alpha) && score < beta))
                     defaultSearch(-beta); // Do full window search
 
                 board.UndoMove(move);

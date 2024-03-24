@@ -49,12 +49,12 @@ public class MyBot : IChessBot
         long nodes = 0; // #DEBUG
 
         // Negamax search is embedded as a local function in order to reduce token count
-        int Search(int ply, int depth, int alpha, int beta, bool nullAllowed)
+        int Search(int ply, int depth, int alpha, int beta)
         {
             // Repetition detection
             // There is no need to check for 3-fold repetition, if a single repetition (0 = draw) ends up being the best,
             // we can trust that repeating moves is the best course of action in this position.
-            if (nullAllowed && board.IsRepeatedPosition())
+            if (ply > 0 && board.IsRepeatedPosition())
                 return 0;
 
             // Check extension: if we are in check, we should search deeper. More info: https://www.chessprogramming.org/Check_Extensions
@@ -143,7 +143,7 @@ public class MyBot : IChessBot
 
             // Local method for similar calls to Search, inspired by Tyrant7's approach here: https://github.com/Tyrant7/Chess-Challenge
             // We keep known values, but we create a local method that will be used to implement 3-fold PVS. More on that later on
-            int defaultSearch(int minusBeta, int reduction = 1, bool nullAllowed = true) => score = -Search(ply + 1, depth - reduction, minusBeta, -alpha, nullAllowed);
+            int defaultSearch(int minusBeta, int reduction = 1) => score = -Search(ply + 1, depth - reduction, minusBeta, -alpha);
 
             // Transposition table lookup
             // Look up best move known so far if it is available
@@ -159,15 +159,7 @@ public class MyBot : IChessBot
                 //   c. The stored score has a lower bound, but we scored above the scored score
                 if (alpha == beta - 1 && ttDepth >= depth && ttFlag != (ttScore >= beta ? 0 : 2))
                     return ttScore;
-
-                // ttScore can be used as a better positional evaluation
-                // If the score is outside what the current bounds are, but it did match flag and depth,
-                // then we can trust that this score is more accurate than the current static evaluation,
-                // and we can update our static evaluation for better accuracy in pruning
-                if (ttFlag != (ttScore > score ? 0 : 2))
-                    score = ttScore;
             }
-
             // Internal iterative reductions
             // If this is the first time we visit this node, it might not be worth searching it fully
             // because it might be a random non-promising node. If it gets visited a second time, it's worth fully looking into.
@@ -194,21 +186,6 @@ public class MyBot : IChessBot
                 // More info: https://www.chessprogramming.org/Reverse_Futility_Pruning
                 if (depth < 7 && score - depth * 75 > beta)
                     return score;
-
-                // Null move pruning
-                // The idea is that each move in a chess engine brings some advantage. If we skip our own move, do a search with reduced depth,
-                // and our position is still so winning that the opponent can't refute it, we claim that this is too good to be true,
-                // and we discard this move. An important observation is the `phase != 0` term, which checks if all remaining
-                // pieces are pawns/kings, this reduces the cases of mis-evaluations of zugzwang in the end-game.
-                // More info: https://www.chessprogramming.org/Null_Move_Pruning
-                if (nullAllowed && score >= beta && depth > 2 && phase != 0)
-                {
-                    board.ForceSkipTurn();
-                    defaultSearch(-beta, 4 + depth / 6, false);
-                    board.UndoSkipTurn();
-                    if (score >= beta)
-                        return beta;
-                }
             }
 
             // Move generation, best-known move then MVV-LVA ordering then quiet move history
@@ -293,7 +270,7 @@ public class MyBot : IChessBot
         for (; timer.MillisecondsElapsedThisTurn <= allocatedTime / 5 /* Soft time limit */; ++depth)
         {
             int score = // #DEBUG
-            Search(0, depth, -2_000_000, 2_000_000, false);
+            Search(0, depth, -2_000_000, 2_000_000);
 
             // Hard time limit
             // If we are out of time, we stop searching and break.

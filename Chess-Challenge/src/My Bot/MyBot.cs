@@ -143,7 +143,7 @@ public class MyBot : IChessBot
 
             // Local method for similar calls to Search, inspired by Tyrant7's approach here: https://github.com/Tyrant7/Chess-Challenge
             // We keep known values, but we create a local method that will be used to implement 3-fold PVS. More on that later on
-            int defaultSearch(int beta, int reduction = 1, bool nullAllowed = true) => score = -Search(ply + 1, depth - reduction, -beta, -alpha, nullAllowed);
+            int defaultSearch(int minusBeta, int reduction = 1, bool nullAllowed = true) => score = -Search(ply + 1, depth - reduction, minusBeta, -alpha, nullAllowed);
 
             // Transposition table lookup
             // Look up best move known so far if it is available
@@ -204,7 +204,7 @@ public class MyBot : IChessBot
                 if (nullAllowed && score >= beta && depth > 2 && phase != 0)
                 {
                     board.ForceSkipTurn();
-                    defaultSearch(beta, 4 + depth / 6, false);
+                    defaultSearch(-beta, 4 + depth / 6, false);
                     board.UndoSkipTurn();
                     if (score >= beta)
                         return beta;
@@ -243,9 +243,9 @@ public class MyBot : IChessBot
 
                 if (inQsearch || movesEvaluated == 0 // No PVS for first move or qsearch
                 || (depth <= 2 || movesEvaluated <= 4 || !isQuiet // Conditions not to do LMR
-                ||  defaultSearch(alpha + 1, 2 + depth / 8 + movesEvaluated / 16 + Convert.ToInt32(doPruning) - quietHistory[move.RawValue & 4095].CompareTo(0)) > alpha) // LMR search raised alpha
-                &&  alpha < defaultSearch(alpha + 1) && score < beta) // Full depth search failed high
-                    defaultSearch(beta); // Do full window search
+                ||  defaultSearch(~alpha, 2 + depth / 8 + movesEvaluated / 16 + Convert.ToInt32(doPruning) - quietHistory[move.RawValue & 4095].CompareTo(0)) > alpha) // LMR search raised alpha
+                &&  alpha < defaultSearch(~alpha) && score < beta) // Full depth search failed high
+                    defaultSearch(-beta); // Do full window search
 
                 board.UndoMove(move);
 

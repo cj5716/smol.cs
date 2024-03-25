@@ -25,6 +25,7 @@ public class MyBot : IChessBot
     public Move Think(Board board, Timer timer)
     {
         Move rootBestMove = default;
+        int globalDepth = 0;
 
         long nodes = 0; // #DEBUG
 
@@ -69,7 +70,6 @@ public class MyBot : IChessBot
             score = ((short)score * phase + score / 0x10000 * (24 - phase)) / 24;
 
             // Transposition table lookup
-            // Look up best move known so far if it is available
             var (ttKey, ttMove, ttDepth, ttScore, ttFlag) = TT[key % 2097152];
 
             // TT cutoff
@@ -128,13 +128,13 @@ public class MyBot : IChessBot
 
         try {
             // Iterative deepening
-            for (int depth = 1; timer.MillisecondsElapsedThisTurn <= timer.MillisecondsRemaining / 40 /* Soft time limit */; ++depth)
+            for (; timer.MillisecondsElapsedThisTurn <= timer.MillisecondsRemaining / 40 /* Soft time limit */;)
             { // #DEBUG
                 int score = // #DEBUG
-                Search(true, depth, -2_000_000, 2_000_000);
+                Search(true, ++globalDepth, -2_000_000, 2_000_000);
 
                 var elapsed = timer.MillisecondsElapsedThisTurn > 0 ? timer.MillisecondsElapsedThisTurn : 1; // #DEBUG
-                Console.WriteLine($"info depth {depth} " + // #DEBUG
+                Console.WriteLine($"info depth {globalDepth} " + // #DEBUG
                                   $"score cp {score} " + // #DEBUG
                                   $"time {timer.MillisecondsElapsedThisTurn} " + // #DEBUG
                                   $"nodes {nodes} " + // #DEBUG

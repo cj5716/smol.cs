@@ -29,7 +29,7 @@ public class MyBot : IChessBot
 
         long nodes = 0; // #DEBUG
 
-        int Search(bool root, int depth, int alpha, int beta)
+        int Search(int depth, int alpha, int beta)
         {
             // Assign zobrist key and whether we are in qsearch
             // Score is init to tempo value of S(15, 1) (extra 1 to compensate for the division vs add + shift later on), and phase is init to 0
@@ -73,7 +73,7 @@ public class MyBot : IChessBot
             var (ttKey, ttMove, ttDepth, ttScore, ttFlag) = TT[key % 2097152];
 
             // TT cutoff
-            if (!root && ttKey == key && ttDepth >= depth && (ttFlag == 1 || ttFlag == 2 && ttScore >= beta || ttFlag == 0 && ttScore <= alpha))
+            if (depth != globalDepth && ttKey == key && ttDepth >= depth && (ttFlag == 1 || ttFlag == 2 && ttScore >= beta || ttFlag == 0 && ttScore <= alpha))
                 return ttScore;
 
             // We look at if it's worth capturing further based on the static evaluation
@@ -98,7 +98,7 @@ public class MyBot : IChessBot
 
                 score = board.IsInCheckmate() ? -1_000_000 + board.PlyCount
                       :      board.IsDraw()   ? 0
-                                              : -Search(false, depth - 1, -beta, -alpha);
+                                              : -Search(depth - 1, -beta, -alpha);
 
                 board.UndoMove(move);
 
@@ -108,7 +108,7 @@ public class MyBot : IChessBot
                 if (score > alpha)
                 {
                     ttMove = move;
-                    if (root) rootBestMove = move;
+                    if (depth == globalDepth) rootBestMove = move;
                     alpha = score;
                     ttFlag = 1; // Exact
                 }
@@ -131,7 +131,7 @@ public class MyBot : IChessBot
             for (; timer.MillisecondsElapsedThisTurn <= timer.MillisecondsRemaining / 40 /* Soft time limit */;)
             { // #DEBUG
                 int score = // #DEBUG
-                Search(true, ++globalDepth, -2_000_000, 2_000_000);
+                Search(++globalDepth, -2_000_000, 2_000_000);
 
                 var elapsed = timer.MillisecondsElapsedThisTurn > 0 ? timer.MillisecondsElapsedThisTurn : 1; // #DEBUG
                 Console.WriteLine($"info depth {globalDepth} " + // #DEBUG

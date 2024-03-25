@@ -9,9 +9,8 @@ using ChessChallenge.API;
 
 public class MyBot : IChessBot
 {
-    // Transposition table
-    // Key, move, depth, score, flag
-    (ulong, Move, int, int, byte)[] TT = new (ulong, Move, int, int, byte)[2097152];
+    // TT moves
+    Move[] TT = new Move[8388608];
 
     // Eval terms packed into C# decimals, as it has 12 usable bytes per token and is thus the most efficient.
     // It is ordered as MG term 1, EG term 1, MG term 2, EG term 2 etc.
@@ -33,7 +32,7 @@ public class MyBot : IChessBot
         {
             // Assign zobrist key and whether we are in qsearch
             // Score is init to tempo value of S(15, 1) (extra 1 to compensate for the division vs add + shift later on), and phase is init to 0
-            var (key, inQsearch, score, phase) = (board.ZobristKey, depth <= 0, 65551, 0);
+            var (key, inQsearch, score, phase) = (board.ZobristKey % 8388608, depth <= 0, 65551, 0);
 
             foreach (bool isWhite in new[] {!board.IsWhiteToMove, board.IsWhiteToMove})
             {
@@ -69,13 +68,6 @@ public class MyBot : IChessBot
             // Here we interpolate the midgame/endgame scores from the single variable to a proper integer that can be used by search
             score = ((short)score * phase + score / 0x10000 * (24 - phase)) / 24;
 
-            // Transposition table lookup
-            var (ttKey, ttMove, ttDepth, ttScore, ttFlag) = TT[key % 2097152];
-
-            // TT cutoff
-            if (depth != globalDepth && ttKey == key && ttDepth >= depth && (ttFlag == 1 || ttFlag == 2 && ttScore >= beta || ttFlag == 0 && ttScore <= alpha))
-                return ttScore;
-
             // We look at if it's worth capturing further based on the static evaluation
             if (inQsearch)
             {
@@ -87,11 +79,9 @@ public class MyBot : IChessBot
                     alpha = score;
             }
 
-            ttFlag = 0; // Upper
-
             // Loop over each legal move
             // TT move then MVV-LVA
-            foreach (var move in board.GetLegalMoves(inQsearch).OrderByDescending(move => (move == ttMove, move.CapturePieceType, 0 - move.MovePieceType)))
+            foreach (var move in board.GetLegalMoves(inQsearch).OrderByDescending(move => (move == TT[key], move.CapturePieceType, 0 - move.MovePieceType)))
             {
                 board.MakeMove(move);
                 nodes++; // #DEBUG
@@ -107,21 +97,14 @@ public class MyBot : IChessBot
 
                 if (score > alpha)
                 {
-                    ttMove = move;
+                    TT[key] = move;
                     if (depth == globalDepth) rootBestMove = move;
                     alpha = score;
-                    ttFlag = 1; // Exact
                 }
 
                 if (alpha >= beta)
-                {
-                    ttFlag++; // Lower
                     break;
-                }
             }
-
-            // Store the current position in the transposition table
-            TT[key % 2097152] = (key, ttMove, inQsearch ? 0 : depth, alpha, ttFlag);
 
             return alpha;
         }

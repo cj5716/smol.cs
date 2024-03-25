@@ -26,8 +26,6 @@ public class MyBot : IChessBot
     {
         Move rootBestMove = default;
 
-        var (allocatedTime, depth) = (timer.MillisecondsRemaining / 8, 1);
-
         long nodes = 0; // #DEBUG
 
         int Search(bool root, int depth, int alpha, int beta)
@@ -104,7 +102,8 @@ public class MyBot : IChessBot
 
                 board.UndoMove(move);
 
-                Convert.ToUInt32(depth > 2 && timer.MillisecondsElapsedThisTurn > allocatedTime);
+                if (depth > 2 && timer.MillisecondsElapsedThisTurn > timer.MillisecondsRemaining / 8)
+                    throw null;
 
                 if (score > alpha)
                 {
@@ -129,7 +128,7 @@ public class MyBot : IChessBot
 
         try {
             // Iterative deepening
-            for (; timer.MillisecondsElapsedThisTurn <= allocatedTime / 5 /* Soft time limit */; ++depth)
+            for (int depth = 1; timer.MillisecondsElapsedThisTurn <= timer.MillisecondsRemaining / 40 /* Soft time limit */; ++depth)
             { // #DEBUG
                 int score = // #DEBUG
                 Search(true, depth, -2_000_000, 2_000_000);

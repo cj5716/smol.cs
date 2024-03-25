@@ -100,9 +100,7 @@ public class MyBot : IChessBot
 
             // Loop over each legal move
             // TT move then MVV-LVA
-            foreach (var move in board.GetLegalMoves(inQsearch).OrderByDescending(move => move == ttMove ? 9_000_000_000_000_000_000
-                                                                                : move.IsCapture ? 1_000_000_000_000_000_000 * (long)move.CapturePieceType - (long)move.MovePieceType
-                                                                                : 0))
+            foreach (var move in board.GetLegalMoves(inQsearch).OrderByDescending(move => (move == ttMove, move.CapturePieceType, 0 - move.MovePieceType)))
             {
                 if (alpha >= beta)
                 {
@@ -118,8 +116,7 @@ public class MyBot : IChessBot
 
                 board.UndoMove(move);
 
-                if (depth > 2 && timer.MillisecondsElapsedThisTurn > allocatedTime)
-                    throw null;
+                Convert.ToUInt32(depth > 2 && timer.MillisecondsElapsedThisTurn > allocatedTime);
 
                 if (score > bestScore)
                     bestScore = score;

@@ -32,13 +32,14 @@ public class MyBot : IChessBot
 
         int Search(bool root, int depth, int alpha, int beta)
         {
-            // Repetition detection
-            if (!root && board.IsRepeatedPosition())
-                return 0;
-
-            // Assign zobrist key and whether we are in qsearch, as well as bestScore to -inf
+            // Assign zobrist key and whether we are in qsearch, as well as bestScore to -mate + ply
             // Score is init to tempo value of S(15, 1) (extra 1 to compensate for the division vs add + shift later on), and phase is init to 0
-            var (key, inQsearch, bestScore, score, phase) = (board.ZobristKey, depth <= 0, -2_000_000, 65551, 0);
+            var (key, inQsearch, bestScore, score, phase) = (board.ZobristKey, depth <= 0, -1_000_000 + board.PlyCount, 65551, 0);
+
+            // Checkmate detection
+            // 1000000 = mate score
+            if (board.IsInCheckmate())
+                return bestScore;
 
             foreach (bool isWhite in new[] {!board.IsWhiteToMove, board.IsWhiteToMove})
             {
@@ -95,50 +96,42 @@ public class MyBot : IChessBot
                 bestScore = score;
             }
 
-            // TT move then MVV-LVA
-            var moves = board.GetLegalMoves(inQsearch).OrderByDescending(move => move == ttMove ? 9_000_000_000_000_000_000
-                                                                               : move.IsCapture ? 1_000_000_000_000_000_000 * (long)move.CapturePieceType - (long)move.MovePieceType
-                                                                               : 0).ToArray();
-
             ttFlag = 0; // Upper
 
             // Loop over each legal move
-            foreach (var move in moves)
+            // TT move then MVV-LVA
+            foreach (var move in board.GetLegalMoves(inQsearch).OrderByDescending(move => move == ttMove ? 9_000_000_000_000_000_000
+                                                                                : move.IsCapture ? 1_000_000_000_000_000_000 * (long)move.CapturePieceType - (long)move.MovePieceType
+                                                                                : 0))
             {
+                if (alpha >= beta)
+                {
+                    ttFlag = 2; // Lower
+                    break;
+                }
+
                 board.MakeMove(move);
                 nodes++; // #DEBUG
 
-                score = -Search(false, depth - 1, -beta, -alpha);
+                score = board.IsDraw() ? 0
+                                       : -Search(false, depth - 1, -beta, -alpha);
 
                 board.UndoMove(move);
 
                 if (depth > 2 && timer.MillisecondsElapsedThisTurn > allocatedTime)
-                    return bestScore;
+                    throw null;
 
                 if (score > bestScore)
-                {
                     bestScore = score;
 
-                    if (score > alpha)
-                    {
-                        ttMove = move;
-                        if (root) rootBestMove = move;
-                        alpha = score;
-                        ttFlag = 1; // Exact
-
-                        if (score >= beta)
-                        {
-                            ttFlag++; // Lower
-                            break;
-                        }
-                    }
+                if (score > alpha)
+                {
+                    ttMove = move;
+                    if (root) rootBestMove = move;
+                    alpha = score;
+                    ttFlag = 1; // Exact
                 }
             }
-
-            // Checkmate / stalemate detection
-            // 1000000 = mate score
-            if (moves.Length == 0)
-                return inQsearch ? bestScore : board.IsInCheck() ? board.PlyCount - 1_000_000 : 0;
 
             // Store the current position in the transposition table
             TT[key % 2097152] = (key, ttMove, inQsearch ? 0 : depth, bestScore, ttFlag);
@@ -146,25 +139,23 @@ public class MyBot : IChessBot
             return bestScore;
         }
 
-        // Iterative deepening
-        for (; timer.MillisecondsElapsedThisTurn <= allocatedTime / 5 /* Soft time limit */; ++depth)
-        {
-            int score = // #DEBUG
-            Search(true, depth, -2_000_000, 2_000_000);
+        try {
+            // Iterative deepening
+            for (; timer.MillisecondsElapsedThisTurn <= allocatedTime / 5 /* Soft time limit */; ++depth)
+            { // #DEBUG
+                int score = // #DEBUG
+                Search(true, depth, -2_000_000, 2_000_000);
 
-            // Hard time limit
-            // If we are out of time, we stop searching and break.
-            if (timer.MillisecondsElapsedThisTurn > allocatedTime)
-                break;
-
-            var elapsed = timer.MillisecondsElapsedThisTurn > 0 ? timer.MillisecondsElapsedThisTurn : 1; // #DEBUG
-            Console.WriteLine($"info depth {depth} " + // #DEBUG
-                              $"score cp {score} " + // #DEBUG
-                              $"time {timer.MillisecondsElapsedThisTurn} " + // #DEBUG
-                              $"nodes {nodes} " + // #DEBUG
-                              $"nps {nodes * 1000 / elapsed} " + // #DEBUG
-                              $"pv {rootBestMove.ToString().Substring(7, rootBestMove.ToString().Length - 8)}"); // #DEBUG
+                var elapsed = timer.MillisecondsElapsedThisTurn > 0 ? timer.MillisecondsElapsedThisTurn : 1; // #DEBUG
+                Console.WriteLine($"info depth {depth} " + // #DEBUG
+                                  $"score cp {score} " + // #DEBUG
+                                  $"time {timer.MillisecondsElapsedThisTurn} " + // #DEBUG
+                                  $"nodes {nodes} " + // #DEBUG
+                                  $"nps {nodes * 1000 / elapsed} " + // #DEBUG
+                                  $"pv {rootBestMove.ToString().Substring(7, rootBestMove.ToString().Length - 8)}"); // #DEBUG
+            } // #DEBUG
         }
+        catch {}
         return rootBestMove;
     }
 }

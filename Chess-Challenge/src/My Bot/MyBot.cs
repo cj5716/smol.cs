@@ -26,7 +26,7 @@ public class MyBot : IChessBot
     {
         Move rootBestMove = default;
 
-        var (allocatedTime, i, depth) = (timer.MillisecondsRemaining / 8, 0, 1);
+        var (allocatedTime, depth) = (timer.MillisecondsRemaining / 8, 1);
 
         long nodes = 0; // #DEBUG
 

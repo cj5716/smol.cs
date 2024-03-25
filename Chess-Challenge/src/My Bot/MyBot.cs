@@ -32,7 +32,7 @@ public class MyBot : IChessBot
         {
             // Assign zobrist key and whether we are in qsearch
             // Score is init to tempo value of S(15, 1) (extra 1 to compensate for the division vs add + shift later on), and phase is init to 0
-            var (key, inQsearch, score, phase) = (board.ZobristKey % 8388608, depth <= 0, 65551, 0);
+            var (key, score, phase) = (board.ZobristKey % 8388608, 65551, 0);
 
             foreach (bool isWhite in new[] {!board.IsWhiteToMove, board.IsWhiteToMove})
             {
@@ -69,7 +69,7 @@ public class MyBot : IChessBot
             score = ((short)score * phase + score / 0x10000 * (24 - phase)) / 24;
 
             // We look at if it's worth capturing further based on the static evaluation
-            if (inQsearch)
+            if (depth <= 0)
             {
                 // Stand pat
                 if (score >= beta)
@@ -81,7 +81,7 @@ public class MyBot : IChessBot
 
             // Loop over each legal move
             // TT move then MVV-LVA
-            foreach (var move in board.GetLegalMoves(inQsearch).OrderByDescending(move => (move == TT[key], move.CapturePieceType, 0 - move.MovePieceType)))
+            foreach (var move in board.GetLegalMoves(depth <= 0).OrderByDescending(move => (move == TT[key], move.CapturePieceType, 0 - move.MovePieceType)))
             {
                 board.MakeMove(move);
                 nodes++; // #DEBUG

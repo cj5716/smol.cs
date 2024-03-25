@@ -63,21 +63,16 @@ public class MyBot : IChessBot
             // Here we interpolate the midgame/endgame scores from the single variable to a proper integer that can be used by search
             score = ((short)score * phase + score / 0x10000 * (24 - phase)) / 24;
 
-            // We look at if it's worth capturing further based on the static evaluation
-            if (depth <= 0)
-            {
-                // Stand pat
-                if (score >= beta)
-                    return score;
-
-                if (score > alpha)
-                    alpha = score;
-            }
+            if (depth <= 0 && score > alpha)
+                alpha = score;
 
             // Loop over each legal move
             // TT move then MVV-LVA
             foreach (var move in board.GetLegalMoves(depth <= 0).OrderByDescending(move => (move == TT[key], move.CapturePieceType, 0 - move.MovePieceType)))
             {
+                if (alpha >= beta)
+                    break;
+
                 board.MakeMove(move);
                 nodes++; // #DEBUG
 
@@ -96,9 +91,6 @@ public class MyBot : IChessBot
                     if (depth == globalDepth) rootBestMove = move;
                     alpha = score;
                 }
-
-                if (alpha >= beta)
-                    break;
             }
 
             return alpha;

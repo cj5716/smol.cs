@@ -1,9 +1,4 @@
-﻿// Project: smol.cs
-// License: MIT
-// Authors: Gediminas Masaitis, Goh CJ (cj5716)
-
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Linq;
 using ChessChallenge.API;
 

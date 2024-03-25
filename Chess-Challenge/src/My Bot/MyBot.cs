@@ -78,15 +78,9 @@ public class MyBot : IChessBot
             // Look up best move known so far if it is available
             var (ttKey, ttMove, ttDepth, ttScore, ttFlag) = TT[key % 2097152];
 
-            if (ttKey == key)
-            {
-                // TT cutoff
-                if (!root && ttDepth >= depth && (ttFlag == 1 || ttFlag == 2 && ttScore >= beta || ttFlag == 0 && ttScore <= alpha))
-                    return ttScore;
-            }
-            // IIR
-            else if (depth > 3)
-                depth--;
+            // TT cutoff
+            if (!root && ttKey == key && ttDepth >= depth && (ttFlag == 1 || ttFlag == 2 && ttScore >= beta || ttFlag == 0 && ttScore <= alpha))
+                return ttScore;
 
             // We look at if it's worth capturing further based on the static evaluation
             if (inQsearch)

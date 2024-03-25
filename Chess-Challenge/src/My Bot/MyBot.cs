@@ -37,8 +37,8 @@ public class MyBot : IChessBot
                 return 0;
 
             // Assign zobrist key and whether we are in qsearch, as well as bestScore to -inf
-            // Score is init to tempo value of S(15, 0), and phase is init to 0
-            var (key, inQsearch, bestScore, score, phase) = (board.ZobristKey, depth <= 0, -2_000_000, 15, 0);
+            // Score is init to tempo value of S(15, 1) (extra 1 to compensate for the division vs add + shift later on), and phase is init to 0
+            var (key, inQsearch, bestScore, score, phase) = (board.ZobristKey, depth <= 0, -2_000_000, 65551, 0);
 
             foreach (bool isWhite in new[] {!board.IsWhiteToMove, board.IsWhiteToMove})
             {

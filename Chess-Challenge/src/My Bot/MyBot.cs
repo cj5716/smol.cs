@@ -95,12 +95,6 @@ public class MyBot : IChessBot
             // TT move then MVV-LVA
             foreach (var move in board.GetLegalMoves(inQsearch).OrderByDescending(move => (move == ttMove, move.CapturePieceType, 0 - move.MovePieceType)))
             {
-                if (alpha >= beta)
-                {
-                    ttFlag = 2; // Lower
-                    break;
-                }
-
                 board.MakeMove(move);
                 nodes++; // #DEBUG
 
@@ -118,6 +112,12 @@ public class MyBot : IChessBot
                     if (root) rootBestMove = move;
                     alpha = score;
                     ttFlag = 1; // Exact
+                }
+
+                if (alpha >= beta)
+                {
+                    ttFlag++; // Lower
+                    break;
                 }
             }
 

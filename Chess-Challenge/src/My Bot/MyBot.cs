@@ -53,14 +53,15 @@ public class MyBot : IChessBot
                 }
             }
 
-            if (depth <= 0 && score > alpha)
-                alpha = score;
+            score = depth <= 0 ? alpha = Math.Max(score, alpha)
+                  : depth <= 5 ? score - 100 * depth
+                               : alpha;
 
             // Loop over each legal move
             // TT move then MVV-LVA
             foreach (var move in board.GetLegalMoves(depth <= 0).OrderByDescending(move => (move == TT[key], move.CapturePieceType, 0 - move.MovePieceType)))
             {
-                if (alpha >= beta)
+                if (score >= beta)
                     return beta;
 
                 board.MakeMove(move);

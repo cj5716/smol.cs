@@ -35,9 +35,8 @@ public class MyBot : IChessBot
                     int sq = BitboardHelper.ClearAndGetIndexOfLSB(ref bitboard),
                         pieceIndex = (int)board.GetPiece(new (sq)).PieceType;
 
-                    // Mobility for bishop, rook, queen, king
-                    if (pieceIndex > 2)
-                        score += evalValues[pieceIndex] * BitboardHelper.GetNumberOfSetBits(BitboardHelper.GetPieceAttacks((PieceType)pieceIndex, new (sq), board, isWhite) & ~sideBB);
+                    // Mobility
+                    score += evalValues[pieceIndex] * BitboardHelper.GetNumberOfSetBits(BitboardHelper.GetPieceAttacks((PieceType)pieceIndex, new (sq), board, isWhite) & ~sideBB);
 
                     // Flip square if black
                     if (!isWhite)

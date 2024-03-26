@@ -71,7 +71,7 @@ public class MyBot : IChessBot
             foreach (var move in board.GetLegalMoves(depth <= 0).OrderByDescending(move => (move == TT[key], move.CapturePieceType, 0 - move.MovePieceType)))
             {
                 if (alpha >= beta)
-                    break;
+                    return beta;
 
                 board.MakeMove(move);
                 nodes++; // #DEBUG

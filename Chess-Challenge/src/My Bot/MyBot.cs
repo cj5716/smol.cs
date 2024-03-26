@@ -97,8 +97,8 @@ public class MyBot : IChessBot
         }
 
         try {
-            // Iterative deepening
-            for (; timer.MillisecondsElapsedThisTurn <= timer.MillisecondsRemaining / 40 /* Soft time limit */;)
+            // Iterative deepening, soft time limit
+            while (timer.MillisecondsElapsedThisTurn <= timer.MillisecondsRemaining / 40)
             { // #DEBUG
                 int score = // #DEBUG
                 Search(++globalDepth, -2_000_000, 2_000_000);

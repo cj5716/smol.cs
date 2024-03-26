@@ -11,7 +11,7 @@ public class MyBot : IChessBot
     Move[] TT = new Move[8388608];
 
     // Eval terms packed into C# decimals, as it has 12 usable bytes per token and is thus the most efficient.
-    static sbyte[] evalValues = (sbyte[])(Array)(new[] { 932095974022612493409452032m, 7461641848335305914170346501m, 12425519745374053625900047130m, 25472446271461558834940489004m, 3727175191630637160520876032m, 5905711669257279981134679308m, 11183933927904991431609357587m, 24232064676254075536917341219m, 18157672592554197249m }.SelectMany(x => decimal.GetBits(x).Take(3).SelectMany(BitConverter.GetBytes)).ToArray());
+    static sbyte[] evalValues = (sbyte[])(Array)(new[] { 1242794632030055060954152960m, 9638959917358734347501179143m, 13667096062770198235270358049m, 32928005563687163324309647920m, 4660484869179300080661561344m, 8392514766621419204747858192m, 18330003468483261489452227867m, 33242326295523352037375490618m, 18085334627329638657m }.SelectMany(x => decimal.GetBits(x).Take(3).SelectMany(BitConverter.GetBytes)).ToArray());
 
     public Move Think(Board board, Timer timer)
     {
@@ -44,11 +44,10 @@ public class MyBot : IChessBot
                     if (!isWhite)
                         sq ^= 56;
 
-                    // 8x quantization, rank and file PSTs  (~20 Elo off full PSTs)
+                    // 6x quantization, rank and file PSTs  (~20 Elo off full PSTs)
                     // Material is encoded within the PSTs
-                    score += evalValues[pieceIndex * 8 + sq / 8]
-                           + evalValues[48 + pieceIndex * 8 + sq % 8]
-                           << 3;
+                    score += (evalValues[pieceIndex * 8 + sq / 8]
+                           +  evalValues[48 + pieceIndex * 8 + sq % 8]) * 6;
 
                 }
             }

@@ -72,15 +72,14 @@ public class MyBot : IChessBot
 
                 board.UndoMove(move);
 
-                if (depth > 2 && timer.MillisecondsElapsedThisTurn > timer.MillisecondsRemaining / 8)
-                    throw null;
-
                 if (score > alpha)
                 {
                     TT[key] = move;
                     if (depth == globalDepth) rootBestMove = move;
                     alpha = score;
                 }
+
+                Convert.ToUInt32(timer.MillisecondsRemaining - timer.MillisecondsElapsedThisTurn * 8);
             }
 
             return alpha;

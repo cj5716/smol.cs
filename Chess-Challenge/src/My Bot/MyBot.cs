@@ -4,6 +4,9 @@ using ChessChallenge.API;
 
 public class MyBot : IChessBot
 {
+    // Root best move
+    Move rootBestMove;
+
     // TT moves
     Move[] TT = new Move[8388608];
 
@@ -12,7 +15,6 @@ public class MyBot : IChessBot
 
     public Move Think(Board board, Timer timer)
     {
-        Move rootBestMove = default;
         int globalDepth = 0;
 
         long nodes = 0; // #DEBUG

@@ -11,7 +11,7 @@ public class MyBot : IChessBot
     Move[] TT = new Move[8388608];
 
     // Extract function to extract values from ulong
-    sbyte Extract(ulong term, int index) => (sbyte)(term >> index * 8 & 0xFF);
+    sbyte Extract(ulong term, int index) => (sbyte)(term >> index * 8);
 
     public Move Think(Board board, Timer timer)
     {

@@ -68,7 +68,7 @@ public class MyBot : IChessBot
                 board.MakeMove(move);
                 nodes++; // #DEBUG
 
-                score = board.IsInCheckmate() ? -1_000_000 + board.PlyCount
+                score = board.IsInCheckmate() ? 1_000_000 - board.PlyCount
                       :        board.IsDraw() ? 0
                                               : -Search(depth - 1, -beta, -alpha);
 

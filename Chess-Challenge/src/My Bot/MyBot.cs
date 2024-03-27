@@ -10,8 +10,9 @@ public class MyBot : IChessBot
     // TT moves
     Move[] TT = new Move[8388608];
 
-    // Eval terms packed into C# decimals, as it has 12 usable bytes per token and is thus the most efficient.
-    static sbyte[] evalValues = (sbyte[])(Array)(new[] { 1242794632030055060954152960m, 9638959917358734347501179143m, 13667096062770198235270358049m, 32928005563687163324309647920m, 4660484869179300080661561344m, 8392514766621419204747858192m, 18330003468483261489452227867m, 33242326295523352037375490618m, 18085334627329638657m }.SelectMany(x => decimal.GetBits(x).Take(3).SelectMany(BitConverter.GetBytes)).ToArray());
+    // Eval terms packed into ulongs (8 bytes per value)
+    ulong[] evalValues = {284790775349248, 8462971131134976, 2244245241712484124, 2604249533607322657, 3617290108189354026, 7666648729631482466, 17592202559488, 1013891626781577231, 1954034614987070487, 2025806318754667803, 3907499648473512247, 7739832227938657635, 18085334627329638657};
+    sbyte Extract(ulong term, int index) => (sbyte)(term >> index * 8 & 0xFF);
 
     public Move Think(Board board, Timer timer)
     {
@@ -37,8 +38,8 @@ public class MyBot : IChessBot
                     int sq = BitboardHelper.ClearAndGetIndexOfLSB(ref bitboard),
                         pieceIndex = (int)board.GetPiece(new (sq)).PieceType;
 
-                    // Mobility
-                    score += evalValues[pieceIndex] * BitboardHelper.GetNumberOfSetBits(BitboardHelper.GetPieceAttacks((PieceType)pieceIndex, new (sq), board, isWhite) & ~sideBB);
+                    // Mobility, we use the raw value instead of evalValues[0] because it is smaller
+                    score += Extract(284790775349248, pieceIndex) * BitboardHelper.GetNumberOfSetBits(BitboardHelper.GetPieceAttacks((PieceType)pieceIndex, new (sq), board, isWhite) & ~sideBB);
 
                     // Flip square if black
                     if (!isWhite)
@@ -46,8 +47,8 @@ public class MyBot : IChessBot
 
                     // 6x quantization, rank and file PSTs  (~20 Elo off full PSTs)
                     // Material is encoded within the PSTs
-                    score += (evalValues[pieceIndex * 8 + sq / 8]
-                           +  evalValues[48 + pieceIndex * 8 + sq % 8]) * 6;
+                    score += (Extract(evalValues[pieceIndex], sq / 8)
+                           +  Extract(evalValues[pieceIndex + 6], sq % 8)) * 6;
 
                 }
             }

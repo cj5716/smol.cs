@@ -27,9 +27,9 @@ public class MyBot : IChessBot
             // Assign zobrist key
             // Score is init to tempo value of 15
             // Eval terms packed into ulongs (8 bytes per value)
-            var(key, score, evalValues) = (board.ZobristKey % 8388608,
-                                           15,
-                                           new[] {284790775349248ul, 8462971131134976ul, 2244245241712484124ul, 2604249533607322657ul, 3617290108189354026ul, 7666648729631482466ul, 17592202559488ul, 1013891626781577231ul, 1954034614987070487ul, 2025806318754667803ul, 3907499648473512247ul, 7739832227938657635ul, 18085334627329638657ul});
+            var (key, score, evalValues) = (board.ZobristKey % 8388608,
+                                            15,
+                                            new[] {284790775349248ul, 8462971131134976ul, 2244245241712484124ul, 2604249533607322657ul, 3617290108189354026ul, 7666648729631482466ul, 17592202559488ul, 1013891626781577231ul, 1954034614987070487ul, 2025806318754667803ul, 3907499648473512247ul, 7739832227938657635ul, 18085334627329638657ul});
 
             foreach (bool isWhite in new[] {!board.IsWhiteToMove, board.IsWhiteToMove})
             {

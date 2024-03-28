@@ -43,6 +43,7 @@ public class MyBot : IChessBot
                         pieceIndex = (int)board.GetPiece(new (sq)).PieceType;
 
                     // Mobility, we use the raw value instead of evalValues[0] because it is smaller
+                    // (sbyte)(284790775349248 >> pieceIndex * 8) is equivalent to Extract(284790775349248, pieceIndex)
                     score += (sbyte)(284790775349248 >> pieceIndex * 8) * BitboardHelper.GetNumberOfSetBits(BitboardHelper.GetPieceAttacks((PieceType)pieceIndex, new (sq), board, isWhite) & ~sideBB);
 
                     // Flip square if black
@@ -51,7 +52,12 @@ public class MyBot : IChessBot
 
                     // 6x quantization, rank and file PSTs  (~20 Elo off full PSTs)
                     // Material is encoded within the PSTs
-                    score += ((sbyte)(evalValues[pieceIndex] >> sq / 8 * 8)
+                    // Equivalent to:
+                    /*
+                    score += (Extract(evalValues[pieceIndex], sq / 8)
+                           +  Extract(evalValues[pieceIndex + 6], sq % 8)) * 6;
+                    */
+                    score += ((sbyte)(evalValues[pieceIndex] >> (sq & 0b111000))
                            +  (sbyte)(evalValues[pieceIndex + 6] >> sq % 8 * 8)) * 6;
 
                 }
